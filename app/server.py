@@ -2,10 +2,8 @@ import socket
 from threading import Thread
 import pickle
 import os
-import datetime
 
 online_users = []
-
 
 if os.path.exists("accounts.pickle") == False:
     with open('accounts.pickle', 'wb') as handle:
@@ -14,7 +12,6 @@ if os.path.exists("accounts.pickle") == False:
 if os.path.exists("clique.pickle") == False:
     with open('clique.pickle', 'wb') as handle:
         pickle.dump([], handle, protocol=pickle.HIGHEST_PROTOCOL)
-
 
 SERVER_HOST = "ip address"
 SERVER_PORT = 5002
@@ -28,12 +25,24 @@ print(f"[*] Listening as {SERVER_HOST}:{SERVER_PORT}")
 
 
 def joinClique(msg):
+    cliqueAvailable = False
+    with open('clique.pickle', 'rb') as handle:
+        tempCliques = pickle.load(handle)
+
+    for i in range(len(tempCliques)):
+        if tempCliques[i]["name"] == msg.split("  ")[0]:
+            cliqueAvailable = True
+            break
+    if cliqueAvailable == False:
+        return False
 
     with open('accounts.pickle', 'rb') as handle:
         a = pickle.load(handle)
 
     for i in range(len(a)):
         if a[i]["username"] == msg.split("  ")[1]:
+            if msg.split("  ")[0] in a[i]["cliques"]:
+                return False
             #print(a[i]["username"], msg.split("  ")[0])
             a[i]["cliques"].append(msg.split("  ")[0])
             break
@@ -92,6 +101,7 @@ def sendText(msg):
 
     handle.close()
 
+
     msg = msg.split("  ")[0] + msg.split("  ")[1]
 
     for client_socket in online_members:
@@ -112,7 +122,7 @@ def loginExists(msg, cs):
     for i in range(len(a)):
 
         if a[i]["username"] == username and a[i]["password"] == password:
-            print(a[i]["cliques"])
+            
 
             #Get whos online
             
@@ -155,6 +165,7 @@ def makeAccount(msg, cs):
     #print(accounts)
 
 def listen_for_client(cs):
+    print("listening for client")
     """
     This function keep listening for a message from `cs` socket
     Whenever a message is received, broadcast it to all other connected clients
@@ -192,11 +203,15 @@ def listen_for_client(cs):
                     for client_socket in client_sockets:
                         client_socket.send(((' '.join(online_users)) + "  ~$@srtmsg:onlineusers").encode())
 
-                elif "~$@srtmsg:joiningClique" in msg:
-                    joinClique(msg)
+                elif "~$@srtmsg:joiningClique" in msg:     
+                    cliqueAvilability = joinClique(msg)
+
+                    if cliqueAvilability == False:
+                        cs.send("~$@srtmsg:cliqueNotAvail".encode())
+                    else:
+                        cs.send("~$@srtmsg:cliqueIsAvail".encode())
 
                 elif "~$@srtmsg:giveReqClique" in msg:
-                    print("regclkiqwquuee!")
                     with open('clique.pickle', 'rb') as handle:
                         tempCliques = pickle.load(handle)
                     handle.close()
