@@ -13,7 +13,10 @@ if os.path.exists("clique.pickle") == False:
     with open('clique.pickle', 'wb') as handle:
         pickle.dump([], handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-SERVER_HOST = "ip address"
+
+hostname = socket.gethostname()
+
+SERVER_HOST = socket.gethostbyname(hostname)
 SERVER_PORT = 5002
 separator_token = "<SEP>"
 client_sockets = []
@@ -38,15 +41,15 @@ def joinClique(msg):
 
     with open('accounts.pickle', 'rb') as handle:
         a = pickle.load(handle)
+    handle.close()
 
     for i in range(len(a)):
         if a[i]["username"] == msg.split("  ")[1]:
             if msg.split("  ")[0] in a[i]["cliques"]:
                 return False
-            #print(a[i]["username"], msg.split("  ")[0])
-            a[i]["cliques"].append(msg.split("  ")[0])
+            else:
+                a[i]["cliques"].append(msg.split("  ")[0])
             break
-    handle.close()
 
     with open('accounts.pickle', 'wb') as handle:
         pickle.dump(a, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -94,6 +97,7 @@ def sendText(msg):
         if c[i]["name"] == msg.split("  ")[2]:
             c[i]["chat"] += msg.split("  ")[0] + msg.split("  ")[1] + "\n\n"
             online_members = c[i]["online_members"]
+            print(online_members)
             break
 
     with open('clique.pickle', 'wb') as handle:
@@ -108,7 +112,6 @@ def sendText(msg):
         client_socket.send(msg.encode())
 
 def loginExists(msg, cs):
-    #print(msg.split("  ")[2])
 
     with open('accounts.pickle', 'rb') as handle:
         a = pickle.load(handle)
@@ -119,19 +122,20 @@ def loginExists(msg, cs):
 
     password = msg.split("  ")[1]
 
+
     for i in range(len(a)):
+        if a[i]["username"] == username:
+            userCliques = a[i]["cliques"]
 
+    for i in range(len(a)):
         if a[i]["username"] == username and a[i]["password"] == password:
-            
-
             #Get whos online
-            
             with open('clique.pickle', 'rb') as handle:
                 b = pickle.load(handle)
             handle.close()
 
             for j in range(len(b)):
-                if b[j]["name"] == msg.split("  ")[2]:
+                if b[j]["name"] in userCliques:
                     b[j]["online_members"].append(cs)
 
             with open('clique.pickle', 'wb') as handle:
@@ -139,7 +143,7 @@ def loginExists(msg, cs):
             handle.close()
 
             #Return users cliques
-            return a[i]["cliques"]
+            return userCliques
     return False
 
 def makeAccount(msg, cs):
@@ -165,7 +169,6 @@ def makeAccount(msg, cs):
     #print(accounts)
 
 def listen_for_client(cs):
-    print("listening for client")
     """
     This function keep listening for a message from `cs` socket
     Whenever a message is received, broadcast it to all other connected clients
@@ -173,7 +176,7 @@ def listen_for_client(cs):
     while True:
 
         try:
-            msg = cs.recv(1024)
+            msg = cs.recv(2048)
             try:
                 msg = msg.decode()
 
@@ -182,16 +185,17 @@ def listen_for_client(cs):
                     loginValid = loginExists(msg, cs)
 
                     if loginValid != False:
-                        cliquesData = []
-                        with open('clique.pickle', 'rb') as handle:
-                            cliques = pickle.load(handle)
-
-                        for i in range(len(cliques)):
-                            #print(cliques[i])
-                            if cliques[i]["name"] in loginValid:
-                                cliquesData.append(cliques[i])
-
-                        cs.send(pickle.dumps(cliquesData))
+                        print(loginValid)
+##                        cliquesData = []
+##                        with open('clique.pickle', 'rb') as handle:
+##                            cliques = pickle.load(handle)
+##
+##                        for i in range(len(cliques)):
+##                            #print(cliques[i])
+##                            if cliques[i]["name"] in loginValid:
+##                                cliquesData.append(cliques[i])
+##
+                        cs.send(pickle.dumps(loginValid))
                         
                         #cs.send("~$@srtmsg:loginwrkd".encode())
                     else:
@@ -231,7 +235,6 @@ def listen_for_client(cs):
                     #User is creating account
                     makeAccount(msg, cs)
                 elif msg["type"] == "clique":
-                    print(msg)
                     makeClique(msg, online_users[client_sockets.index(cs)])
 
                 
