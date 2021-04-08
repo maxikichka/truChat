@@ -69,7 +69,7 @@ def listen_for_messages():
     
     while True:
 
-        message = s.recv(1024)
+        message = s.recv(2048)
 
         try:
             message = message.decode()
@@ -243,9 +243,6 @@ def checkIfExists():
 
     s.send(message.encode())
 
-
-
-
 def logInAcc():
     global name, passWord, loginWin
     
@@ -266,9 +263,6 @@ def logInAcc():
 
 
     loginWin.mainloop()
-    
-    
-    
 
 def makeAccount():
 
@@ -304,6 +298,7 @@ def signUp():
 
 
     login.mainloop()
+
 
 SERVER_HOST = "ip address"
 SERVER_PORT = 5002
