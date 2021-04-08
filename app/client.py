@@ -88,7 +88,6 @@ def listen_for_messages():
                     pass
 
             elif "~$@srtmsg:theReqsChat" in message:
-                print("put chat")
                 messageToReqs = message.split("  ")[0]
 
                 messages = Text(win)
@@ -97,9 +96,13 @@ def listen_for_messages():
 
                 messages.grid(row=1, column=1)
 
+            elif "~$@srtmsg:cliqueNotAvail" in message:
+                messagebox.showerror("Clique Not Available", "You can not join this clique either because you are already in it or it does not exist. ")
+
+            elif "~$@srtmsg:cliqueIsAvail" in message:
+                cliquesList.insert(END, cliqueNameToJoin.get())
+
             else:
-                ''
-                print("inserting message")
                 messages.insert(END, message + "\n\n")
 
         except UnicodeDecodeError:
@@ -172,7 +175,6 @@ def chatApp(*args):
 
     selectedClique = cliquesList.get(cliquesList.curselection()[0])
 
-    print("HI!!!")
 
     s.send((selectedClique + "  ~$@srtmsg:giveReqClique").encode())
 
@@ -237,7 +239,6 @@ def checkIfExists():
 
     message = name.get() + "  " + passWord.get() + "  ~$@srtmsg:login"
 
-    name.destroy()
     passWord.get()
 
     s.send(message.encode())
@@ -303,7 +304,6 @@ def signUp():
 
 
     login.mainloop()
-
 
 SERVER_HOST = "ip address"
 SERVER_PORT = 5002
