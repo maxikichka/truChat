@@ -68,6 +68,7 @@ def listen_for_messages():
     global message, online_users, userName, messageToReqs, messages
     
     while True:
+        print("HI!!")
 
         message = s.recv(2048)
 
@@ -107,8 +108,8 @@ def listen_for_messages():
 
         except UnicodeDecodeError:
             #login worked
-            online_users.append(userName)
-            s.send((userName + "  ~$@srtmsg:online").encode())
+            #online_users.append(userName)
+            #s.send((userName + "  ~$@srtmsg:online").encode())
 
             homePage(pickle.loads(message))
 
@@ -159,7 +160,7 @@ def sendDataThread(*args):
 
     message = (userName + ":  " + typeArea.get() + "  " + selectedClique)
 
-    messages.insert(END, userName + ":  " + typeArea.get() + "\n\n")
+    #messages.insert(END, userName + ":  " + typeArea.get() + "\n\n")
 
 
     typeArea.delete(0, END)
@@ -177,6 +178,8 @@ def chatApp(*args):
 
 
     s.send((selectedClique + "  ~$@srtmsg:giveReqClique").encode())
+
+    s.send((userName + "  ~$@srtmsg:online").encode())
 
     try:
         messages.destroy()
@@ -216,7 +219,7 @@ def homePage(cliques):
     cliquesList = Listbox(win)
 
     for i in range(len(cliques)):
-        cliquesList.insert(i + 1, cliques[i]["name"])
+        cliquesList.insert(i + 1, cliques[i])
 
     cliquesList.bind("<<ListboxSelect>>", chatApp)
 
@@ -299,8 +302,7 @@ def signUp():
 
     login.mainloop()
 
-
-SERVER_HOST = "ip address"
+SERVER_HOST = "192.168.0.231"
 SERVER_PORT = 5002
 separator_token = "<SEP>"
 
