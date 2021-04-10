@@ -16,7 +16,7 @@ if os.path.exists("clique.pickle") == False:
 
 hostname = socket.gethostname()
 
-SERVER_HOST = socket.gethostbyname(hostname)
+SERVER_HOST = "192.168.0.231" #socket.gethostbyname(hostname)
 SERVER_PORT = 5002
 separator_token = "<SEP>"
 client_sockets = []
@@ -27,10 +27,40 @@ s.listen(5)
 print(f"[*] Listening as {SERVER_HOST}:{SERVER_PORT}")
 
 
+
+with open('clique.pickle', 'rb') as handle:
+    tempCliques = pickle.load(handle)
+handle.close()
+
+#print(tempCliques)
+
+def userOfflineCliques(username, cs):
+    with open('accounts.pickle', 'rb') as handle:
+        a = pickle.load(handle)
+    handle.close()
+
+    for i in range(len(a)):
+        if a[i]["username"] == username:
+            userCliques = a[i]["cliques"]
+            break
+
+    #userCliques
+    with open('clique.pickle', 'rb') as handle:
+        tempCliques = pickle.load(handle)
+    handle.close()
+
+    for i in range(len(tempCliques)):
+        if tempCliques[i]["name"] in userCliques:
+            print(client_sockets.index(cs))
+            print()
+            print(tempCliques[i]["online_members"])
+            tempCliques[i]["online_members"].remove(client_sockets.index(cs))
+
 def joinClique(msg):
     cliqueAvailable = False
     with open('clique.pickle', 'rb') as handle:
         tempCliques = pickle.load(handle)
+    handle.close()
 
     for i in range(len(tempCliques)):
         if tempCliques[i]["name"] == msg.split("  ")[0]:
@@ -52,7 +82,7 @@ def joinClique(msg):
             break
 
     with open('accounts.pickle', 'wb') as handle:
-        pickle.dump(a, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(a, handle)
 
     handle.close()
 
@@ -61,14 +91,14 @@ def makeClique(msg, person):
     #Add the clique data
     
     with open('clique.pickle', 'rb') as handle:
-        cliques = pickle.load(handle)
+        c = pickle.load(handle)
 
     handle.close()
 
-    cliques.append(msg)
+    c.append(msg)
 
     with open('clique.pickle', 'wb') as handle:
-        cliques = pickle.dump(cliques, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(c, handle)
 
     handle.close()
 
@@ -108,8 +138,11 @@ def sendText(msg):
 
     msg = msg.split("  ")[0] + msg.split("  ")[1]
 
+    #online_members
+    #client_sockets
+    print(online_members)
     for client_socket in online_members:
-        client_socket.send(msg.encode())
+        client_sockets[client_socket].send(msg.encode())
 
 def loginExists(msg, cs):
 
@@ -122,13 +155,10 @@ def loginExists(msg, cs):
 
     password = msg.split("  ")[1]
 
-
-    for i in range(len(a)):
-        if a[i]["username"] == username:
-            userCliques = a[i]["cliques"]
-
     for i in range(len(a)):
         if a[i]["username"] == username and a[i]["password"] == password:
+
+            userCliques = a[i]["cliques"]
             #Get whos online
             with open('clique.pickle', 'rb') as handle:
                 b = pickle.load(handle)
@@ -136,12 +166,14 @@ def loginExists(msg, cs):
 
             for j in range(len(b)):
                 if b[j]["name"] in userCliques:
-                    b[j]["online_members"].append(cs)
+                    b[j]["online_members"].append(client_sockets.index(cs))
+                    #break
 
-            with open('clique.pickle', 'wb') as handle:
-                pickle.dump(b, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            handle = open('clique.pickle', 'wb')
+
+            pickle.dump(b, handle)
             handle.close()
-
+            online_users.append(username)
             #Return users cliques
             return userCliques
     return False
@@ -194,9 +226,9 @@ def listen_for_client(cs):
 ##                            #print(cliques[i])
 ##                            if cliques[i]["name"] in loginValid:
 ##                                cliquesData.append(cliques[i])
-##
+
                         cs.send(pickle.dumps(loginValid))
-                        
+
                         #cs.send("~$@srtmsg:loginwrkd".encode())
                     else:
                         cs.send("~$@srtmsg:loginfled".encode())
@@ -204,10 +236,11 @@ def listen_for_client(cs):
                 elif "~$@srtmsg:online" in msg:
                     username = msg.split("  ")[0]
                     online_users.append(username)
+
                     for client_socket in client_sockets:
                         client_socket.send(((' '.join(online_users)) + "  ~$@srtmsg:onlineusers").encode())
 
-                elif "~$@srtmsg:joiningClique" in msg:     
+                elif "~$@srtmsg:joiningClique" in msg:
                     cliqueAvilability = joinClique(msg)
 
                     if cliqueAvilability == False:
@@ -216,10 +249,12 @@ def listen_for_client(cs):
                         cs.send("~$@srtmsg:cliqueIsAvail".encode())
 
                 elif "~$@srtmsg:giveReqClique" in msg:
+                    print(msg)
                     with open('clique.pickle', 'rb') as handle:
                         tempCliques = pickle.load(handle)
                     handle.close()
                     for i in range(len(tempCliques)):
+                        #print("HI!!")
                         if tempCliques[i]["name"] == msg.split("  ")[0]:
                             #print(tempCliques[i]["chat"])
                             cs.send((tempCliques[i]["chat"] + "  ~$@srtmsg:theReqsChat").encode())
@@ -235,21 +270,23 @@ def listen_for_client(cs):
                     #User is creating account
                     makeAccount(msg, cs)
                 elif msg["type"] == "clique":
+                    print(client_sockets)
+                    print()
+                    print(online_users)
                     makeClique(msg, online_users[client_sockets.index(cs)])
 
                 
         except ConnectionResetError:
             #User left, should remove them
+            userOfflineCliques(online_users[client_sockets.index(cs)], cs)
             print(online_users[client_sockets.index(cs)] + " has left the chat.")
             online_users.remove(online_users[client_sockets.index(cs)])
             client_sockets.remove(cs)
 
+            
             for client_socket in client_sockets:
                 client_socket.send(((' '.join(online_users)) + "  ~$@srtmsg:onlineusers").encode())
             return
-            
-
-
 
 while True:
     client_socket, client_address = s.accept()
