@@ -16,7 +16,7 @@ if os.path.exists("clique.pickle") == False:
 
 hostname = socket.gethostname()
 
-SERVER_HOST = "192.168.0.231" #socket.gethostbyname(hostname)
+SERVER_HOST = "type in ip" #socket.gethostbyname(hostname)
 SERVER_PORT = 5002
 separator_token = "<SEP>"
 client_sockets = []
